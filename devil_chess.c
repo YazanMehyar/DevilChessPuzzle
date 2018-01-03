@@ -1,70 +1,71 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <inttypes.h>
-#include <stddef.h>
-#include <stdbool.h>
 
-// WARNING: Do not define 'SIZE' to be any greater than 24
-#define SIZE	4
+typedef unsigned int uint;
 
-struct node {
-	bool	filled;
-	uint	color;
-	uint	links[SIZE];
-};
+// WARNING: Do not define 'lSIZE' to be greater than 4
+#define lSIZE		4
+#define SIZE		(1<<lSIZE)
+#define PSIZE		(1<<SIZE)
 
-struct node config[(1<<SIZE)];
+uint COLOR[PSIZE];
+
+static inline uint cnum(uint i, uint j, uint inc) {
+	return i & ~(0x3<<j) | (0x3&(0x3&i>>j)+inc)<<j;
+}
+
+static inline uint getCset(uint i, uint j, uint k) {
+	uint j_inc = j&0x1? j&=~0x1, 1 : -1;
+	uint k_inc = k&0x1? k&=~0x1, 1 : -1;
+
+	return cnum(cnum(i,j,j_inc),k,k_inc);
+}
+
+static inline uint getKnum(uint i) {
+	uint m = 0xAAAAAAAA;
+
+	return i&m | (i&m)>>1^i&m>>1;
+}
 
 void
 print_bin(uint data) {
 	for(char i = SIZE-1; i >= 0; i--)
-		printf("%c", (data&(1<<i))? '1':'0');
-	printf("\n");
+		printf("%c", data&(1<<i)? '1':'0');
 }
 
-void
-fillConfig(uint index) {
-	uint i;
-	char j;
-	for(i = 1, j = 0; j < SIZE; i <<= 1, j++) {
-		config[index].links[j] = index^i;
-		if(!config[index^i].filled) {
-			config[index^i].filled = true;
-			fillConfig(index^i);
+uint
+colorKmap(uint i) {
+	if( i == PSIZE ) return 1;
+
+	uint colors = 0;
+
+	for(uint j = 0; j < SIZE; j++)
+		for(uint k = 0; k < SIZE; k++)
+			colors |= COLOR[getCset(i, j, k)];
+
+	colors = ~colors & (PSIZE-1);
+	if(!colors) return 0;
+
+	uint found = 0;
+	for(uint j = 0; !found && j < SIZE; j++) {
+		if(1<<j & colors) {
+			COLOR[i] = 1<<j;
+			found = colorKmap(i+1);
 		}
-	}
-}
-
-void
-colorConfig(uint index, uint depth) {
-	if(config[index].color) return;
-	uint this_color = 0;
-
-	uint *links = &config[index].links[0];
-	for(char i = 0; i < SIZE; i++) {
-		this_color |= config[*links++].color;
-	} this_color = ((1<<SIZE)-1) ^ this_color;
-
-	config[index].color = this_color&-this_color;
-
-	for(char i = 0; i < SIZE; i++) {
-		colorConfig(config[index].links[i], depth+1);
-	}
+	} if(!found) COLOR[i] = 0;
+	return COLOR[i];
 }
 
 int
 main(void) {
 
-	config[0].filled = true;
-	fillConfig(0);
-	colorConfig(0, 0);
+	colorKmap(0);
 
-	for(char j = 0; j < SIZE; j++) {
-		printf( "\n POS %2d\n--------\n", j);
-		for(uint i = 0; i < (1<<SIZE); i++) {
-			if(config[i].color == j) print_bin(i);
+	for(uint i = 0; i < SIZE; i++) {
+		for(uint j = 0; j < PSIZE; j++) {
+			if(COLOR[j] == 1 << i) {
+				printf("%02d: ", i); print_bin(getKnum(j)); putchar('\n');
+			}
 		}
-	}
-
-	return 0;
+	} return 0;
 }
