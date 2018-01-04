@@ -1,3 +1,11 @@
+/**
+ * @Author: Yazan Mehyar <zen>
+ * @Email:  stcyazanerror@gmail.com
+ * @Filename: devil_chess.c
+ * @Last modified time: 04-Jan-2018
+ */
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
