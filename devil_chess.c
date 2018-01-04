@@ -28,7 +28,7 @@ static void printUsage(char *p) {
 	fprintf(stderr, "USAGE: %s <FILE-NAME>\n"
 					"The file specified should contain a valid pattern\n"
 					"PATTERN:       64<UNIT>\n"
-					"UNIT:          (<HEAD> OR <TAIL>)<WHITE_SPACE>*\n"
+					"UNIT:          <WHITE_SPACE>*(<HEAD> OR <TAIL>)<WHITE_SPACE>*\n"
 					"HEAD:          (H OR h OR 0 OR o OR O)\n"
 					"TAIL:          (T or t or 1 or x or X)\n"
 					"WHITE_SPACE:   (TAB OR SPACE OR NEWLINE OR FORMFEED"
