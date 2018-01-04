@@ -1,14 +1,16 @@
-#include <stdlib.h>
 #include <stdio.h>
 
-typedef unsigned int uint;
+typedef unsigned long long int uint;
+typedef unsigned char byte_t;
 
 // WARNING: Do not define 'lSIZE' to be greater than 4
-#define lSIZE		4
-#define SIZE		(1<<lSIZE)
-#define PSIZE		(1<<SIZE)
+#define lSIZE		3
+#define SIZE		(1u<<lSIZE)
+#define PSIZE		(1ull<<SIZE)
 
-uint COLOR[PSIZE];
+byte_t COLOR[PSIZE];
+
+/****************************************************************************************/
 
 static inline uint cnum(uint i, uint j, uint inc) {
 	return i & ~(0x3<<j) | (0x3&(0x3&i>>j)+inc)<<j;
@@ -17,55 +19,49 @@ static inline uint cnum(uint i, uint j, uint inc) {
 static inline uint getCset(uint i, uint j, uint k) {
 	uint j_inc = j&0x1? j&=~0x1, 1 : -1;
 	uint k_inc = k&0x1? k&=~0x1, 1 : -1;
-
 	return cnum(cnum(i,j,j_inc),k,k_inc);
 }
 
-static inline uint getKnum(uint i) {
-	uint m = 0xAAAAAAAA;
-
+static inline uint knum(uint i) {
+	uint m = 0xAAAAAAAAAAAAAAAAull;
 	return i&m | (i&m)>>1^i&m>>1;
 }
 
-void
-print_bin(uint data) {
-	for(char i = SIZE-1; i >= 0; i--)
-		printf("%c", data&(1<<i)? '1':'0');
+static inline byte_t bpos(uint i) {
+	byte_t m = 0;
+	i &= -i;
+	while(i>>=1) m++;
+	return m;
 }
 
-uint
-colorKmap(uint i) {
-	if( i == PSIZE ) return 1;
-
-	uint colors = 0;
-
-	for(uint j = 0; j < SIZE; j++)
-		for(uint k = 0; k < SIZE; k++)
-			colors |= COLOR[getCset(i, j, k)];
-
-	colors = ~colors & (PSIZE-1);
-	if(!colors) return 0;
-
-	uint found = 0;
-	for(uint j = 0; !found && j < SIZE; j++) {
-		if(1<<j & colors) {
-			COLOR[i] = 1<<j;
-			found = colorKmap(i+1);
-		}
-	} if(!found) COLOR[i] = 0;
-	return COLOR[i];
+static inline uint eparity(uint d) {
+	byte_t m = SIZE;
+	while(m>>=1) d ^= d>>m;
+	return ~d & 1;
 }
 
-int
-main(void) {
+static inline byte_t dhash(uint d) {
+	d = knum(d);
+	d ^= eparity(d);
+	return d >> 1;
+}
 
-	colorKmap(0);
+/****************************************************************************************/
 
-	for(uint i = 0; i < SIZE; i++) {
-		for(uint j = 0; j < PSIZE; j++) {
-			if(COLOR[j] == 1 << i) {
-				printf("%02d: ", i); print_bin(getKnum(j)); putchar('\n');
-			}
-		}
+int main(void) {
+	for(uint i = 0; i < PSIZE; i++) {
+		uint colors = 0;
+		for(uint j = 0; j < SIZE; j++)
+			for(uint k = 0; k < SIZE; k++)
+				if(i > getCset(i,j,k)) colors |= 1 << COLOR[getCset(i,j,k)];
+
+		COLOR[i] = bpos(colors+1);
+	}
+
+	for(uint j = 0; j < SIZE; j++){
+		printf("%02X: ",j);
+		for(uint i = 0; i < PSIZE; i+=2) {
+				if(COLOR[i]==j) printf("%02X ", dhash(i));
+		} putchar('\n');
 	} return 0;
 }
