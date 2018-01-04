@@ -1,1 +1,7 @@
-devil_chess
+# Ignore everything
+*
+
+# Except
+!devil_chess.c
+!.gitignore
+!test_*.txt

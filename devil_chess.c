@@ -1,67 +1,130 @@
+#include <stdlib.h>
 #include <stdio.h>
+#include <ctype.h>
 
-typedef unsigned long long int uint;
+typedef unsigned int  uint;
 typedef unsigned char byte_t;
 
-// WARNING: Do not define 'lSIZE' to be greater than 4
-#define lSIZE		3
-#define SIZE		(1u<<lSIZE)
-#define PSIZE		(1ull<<SIZE)
+#define NRM  "\x1B[0m"
+#define RED  "\x1B[31m"
 
-byte_t COLOR[PSIZE];
+#define SIZE	8u
+#define ERROR(fmt, ...)	fprintf(stderr,RED "ERROR: " fmt NRM"\n", ##__VA_ARGS__)
 
-/****************************************************************************************/
-
-static inline uint cnum(uint i, uint j, uint inc) {
-	return i & ~(0x3<<j) | (0x3&(0x3&i>>j)+inc)<<j;
-}
-
-static inline uint getCset(uint i, uint j, uint k) {
-	uint j_inc = j&0x1? j&=~0x1, 1 : -1;
-	uint k_inc = k&0x1? k&=~0x1, 1 : -1;
-	return cnum(cnum(i,j,j_inc),k,k_inc);
-}
-
-static inline uint knum(uint i) {
-	uint m = 0xAAAAAAAAAAAAAAAAull;
-	return i&m | (i&m)>>1^i&m>>1;
-}
-
-static inline byte_t bpos(uint i) {
-	byte_t m = 0;
-	i &= -i;
-	while(i>>=1) m++;
-	return m;
-}
-
-static inline uint eparity(uint d) {
-	byte_t m = SIZE;
-	while(m>>=1) d ^= d>>m;
-	return ~d & 1;
-}
-
-static inline byte_t dhash(uint d) {
-	d = knum(d);
-	d ^= eparity(d);
-	return d >> 1;
-}
+static byte_t devil_board[SIZE*SIZE];
+static const uint BOARD_SIZE = sizeof(devil_board)/sizeof(devil_board[0]);
 
 /****************************************************************************************/
 
-int main(void) {
-	for(uint i = 0; i < PSIZE; i++) {
-		uint colors = 0;
-		for(uint j = 0; j < SIZE; j++)
-			for(uint k = 0; k < SIZE; k++)
-				if(i > getCset(i,j,k)) colors |= 1 << COLOR[getCset(i,j,k)];
+static void printUsage(char *p) {
+	fprintf(stderr, "USAGE: %s <FILE-NAME>\n"
+					"The file specified should contain a valid pattern\n"
+					"PATTERN:       64<UNIT>\n"
+					"UNIT:          (<HEAD> OR <TAIL>)<WHITE_SPACE>*\n"
+					"HEAD:          (H OR h OR 0 OR o OR O)\n"
+					"TAIL:          (T or t or 1 or x or X)\n"
+					"WHITE_SPACE:   (TAB OR SPACE OR NEWLINE OR FORMFEED"
+									" OR CARRIAGE RETURN OR VERTICAL TAB)\n"
+					"NOTE: WHITE_SPACE is optional & you can have a string of WHITE_SPACE\n"
+					,p);
+}
 
-		COLOR[i] = bpos(colors+1);
+static void printBoard(void) {
+	for(uint i = 0; i < SIZE; i++) {
+		for(uint j = 0; j < SIZE; j++) {
+			printf("%c ", devil_board[i*SIZE+j]? 'X':'O');
+		} putchar('\n');
+	}
+}
+
+static void parseFile(FILE *f) {
+	char c;
+	uint idx = 0;
+	while (idx < BOARD_SIZE) {
+		c = fgetc(f);
+		if(isspace(c)) continue;
+		switch (c) {
+			case '0':
+			case 'H':
+			case 'h':
+			case 'O':
+			case 'o':	devil_board[idx] = 0;
+			break;
+
+			case '1':
+			case 'T':
+			case 't':
+			case 'X':
+			case 'x':	devil_board[idx] = 1;
+			break;
+
+			case EOF:
+				ERROR("Incomplete pattern, last index: %u", idx);
+				exit(1);
+			default:
+				ERROR("Parsing error, illegal character: row %u, column %u", idx/SIZE, idx%SIZE);
+				exit(1);
+		} idx++;
+	}
+}
+
+// Figure out the position indicated by the pattern
+static byte_t dhash(void) {
+	uint pos  = 0;
+	uint i    = 0;
+	byte_t p  = 0;
+	uint size  = i = BOARD_SIZE;
+
+	byte_t b[BOARD_SIZE];
+	while(i--) b[i] = devil_board[i];
+
+	while(size>>=1) {
+		for(i = p = 0; i < size; i++) {
+			p ^= b[i];
+			b[i] ^= b[i+size];
+		} pos = p | pos<<1;
+	} return pos;
+}
+
+/****************************************************************************************/
+
+int main(uint argc, char **argv) {
+	if(argc < 2) {
+		printUsage(argv[0]);
+		exit(1);
 	}
 
-	for(uint j = 0; j < SIZE; j++){
-		printf("%02X: ",j);
-		for(uint i = 0; i < PSIZE; i+=2) {
-				if(COLOR[i]==j) printf("%02X ", dhash(i));
-		} putchar('\n');
-	} return 0;
+	FILE* f;
+	if( (f = fopen(argv[1], "r")) == NULL ) {
+		ERROR("Cannot read file: %s", argv[1]);
+		exit(1);
+	} parseFile(f);
+
+	uint dim, idx;
+
+SCAN_ROW:
+	fprintf(stderr,"Enter row of magic coin: ");
+	if(scanf("%u", &dim) != 1 || dim > 7){
+		fprintf(stderr,"ERROR: value must be a digit from 0 to 7 inclusive\n");
+		goto SCAN_ROW;
+	} idx = dim*SIZE;
+
+SCAN_COL:
+	fprintf(stderr,"Enter column of magic coin: ");
+	if(scanf("%u", &dim) != 1 || dim > 7){
+		fprintf(stderr,"ERROR: value must be a digit from 0 to 7 inclusive\n");
+		goto SCAN_COL;
+	} idx += dim;
+
+	dim = dhash();
+	fprintf(stderr, "Starting pattern pointed to row %u column %u\n",dim/SIZE,dim%SIZE);
+
+	idx = (BOARD_SIZE-1) - (idx^dim);
+	devil_board[idx] ^= 1;
+
+	fprintf(stderr, "Flip coin at row %u column %u\n", idx/SIZE, idx%SIZE);
+	printBoard();
+	dim = dhash();
+	fprintf(stderr, "Finishing pattern now pointing to row %u column %u\n",dim/SIZE,dim%SIZE);
+	return 0;
 }
