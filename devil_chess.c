@@ -70,11 +70,11 @@ static void parseFile(FILE *f) {
 
 // Figure out the position indicated by the pattern
 static byte_t dhash(void) {
-	uint pos  = 0;
-	uint i    = 0;
-	byte_t p  = 0;
-	uint size  = i = BOARD_SIZE;
+	uint pos, i, size;
+	byte_t p;
 
+	size = i = BOARD_SIZE;
+	pos  = 0;
 	byte_t b[BOARD_SIZE];
 	while(i--) b[i] = devil_board[i];
 
