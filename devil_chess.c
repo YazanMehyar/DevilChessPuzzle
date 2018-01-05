@@ -45,7 +45,7 @@ static void printBoard(void) {
 	}
 }
 
-static void parseFile(FILE *f) {
+static uint parseFile(FILE *f) {
 	char c;
 	uint idx = 0;
 	while (idx < BOARD_SIZE) {
@@ -68,12 +68,12 @@ static void parseFile(FILE *f) {
 
 			case EOF:
 				ERROR("Incomplete pattern, last index: %u", idx);
-				exit(1);
+				return 1;
 			default:
 				ERROR("Parsing error, illegal character: row %u, column %u", idx/SIZE, idx%SIZE);
-				exit(1);
+				return 1;
 		} idx++;
-	}
+	} return 0;
 }
 
 // Figure out the position indicated by the pattern
@@ -106,7 +106,10 @@ int main(uint argc, char **argv) {
 	if( (f = fopen(argv[1], "r")) == NULL ) {
 		ERROR("Cannot read file: %s", argv[1]);
 		exit(1);
-	} parseFile(f);
+	} if( parseFile(f) ) {
+		fclose(f);
+		exit(1);
+	}
 
 	uint dim, idx;
 
