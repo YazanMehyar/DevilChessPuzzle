@@ -15,6 +15,22 @@ However, before your friend enters, you may flip exactly one of the coins.
 Work out a strategy, to be agreed with your friend before you enter the room,
 which will allow him to identify the Magic Coin. 
 
+---------------------------------------------------------------------------------------------------
+
+Program Usage:
+
+<COMPILED-PROGRAM NAME> <FILE-NAME>
+
+The file specified should contain a valid pattern
+PATTERN:       64<UNIT>
+UNIT:          <WHITE_SPACE>*(<HEAD> OR <TAIL>)<WHITE_SPACE>*
+HEAD:          (H OR h OR 0 OR o OR O)
+TAIL:          (T or t or 1 or x or X)
+WHITE_SPACE:   (TAB OR SPACE OR NEWLINE OR FORMFEED OR CARRIAGE RETURN OR VERTICAL TAB)
+
+NOTE: WHITE_SPACE is optional & you can have a string of WHITE_SPACE
+
+---------------------------------------------------------------------------------------------------
 
 A Basic Description of the Solution:
 
@@ -62,3 +78,6 @@ The position of coin to be flipped in an 8x8 board is:
 	63 - (hash(starting pattern) xor position of magic coin)
 
 As to why it is so is left an exercise for the reader.
+
+---------------
+END OF DOCUMENT
