@@ -109,7 +109,7 @@ int main(uint argc, char **argv) {
 	} if( parseFile(f) ) {
 		fclose(f);
 		exit(1);
-	}
+	} fclose(f);
 
 	uint dim, idx;
 
