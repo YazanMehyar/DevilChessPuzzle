@@ -6,7 +6,6 @@
  */
 
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
 
@@ -17,7 +16,7 @@ typedef unsigned char byte_t;
 #define RED  "\x1B[31m"
 
 #define SIZE	8u
-#define ERROR(fmt, ...)	fprintf(stderr,RED "ERROR: " fmt NRM"\n", ##__VA_ARGS__)
+#define ERROR(fmt, ...)	fprintf(stderr,"\n"RED"ERROR: "fmt NRM"\n", ##__VA_ARGS__)
 
 static byte_t devil_board[SIZE*SIZE];
 static const uint BOARD_SIZE = sizeof(devil_board)/sizeof(devil_board[0]);
@@ -99,16 +98,16 @@ static byte_t dhash(void) {
 int main(uint argc, char **argv) {
 	if(argc < 2) {
 		printUsage(argv[0]);
-		exit(1);
+		return 1;
 	}
 
 	FILE* f;
 	if( (f = fopen(argv[1], "r")) == NULL ) {
 		ERROR("Cannot read file: %s", argv[1]);
-		exit(1);
+		return 1;
 	} if( parseFile(f) ) {
 		fclose(f);
-		exit(1);
+		return 1;
 	} fclose(f);
 
 	uint dim, idx;
@@ -116,14 +115,14 @@ int main(uint argc, char **argv) {
 SCAN_ROW:
 	fprintf(stderr,"Enter row of magic coin: ");
 	if(scanf("%u", &dim) != 1 || dim > 7){
-		fprintf(stderr,"ERROR: value must be a digit from 0 to 7 inclusive\n");
+		ERROR("Value must be a digit from 0 to 7 inclusive\n");
 		goto SCAN_ROW;
 	} idx = dim*SIZE;
 
 SCAN_COL:
 	fprintf(stderr,"Enter column of magic coin: ");
 	if(scanf("%u", &dim) != 1 || dim > 7){
-		fprintf(stderr,"ERROR: value must be a digit from 0 to 7 inclusive\n");
+		ERROR("Value must be a digit from 0 to 7 inclusive\n");
 		goto SCAN_COL;
 	} idx += dim;
 
